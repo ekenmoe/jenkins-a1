@@ -2,21 +2,21 @@ pipeline {
 
     agent any
     // agent {
-    //     label 'production'
+    //     label 'master'
     // }
 
     parameters {
+        choice(
+            name: 'ACCOUNT_MANAGEMENT',
+            choices: ['', 'add_user', 'delete_user', 'lock_user', 'unlock_user'],
+            description: ''
+        )
         string(name: 'USERNAME', defaultValue: '', description: 'Enter username')
         string(name: 'PASSWORD', defaultValue: '', description: 'Enter password')
         string(name: 'EMAIL', defaultValue: '', description: 'Enter email')
         string(name: 'FIRSTNAME', defaultValue: '', description: 'Enter first name')
         string(name: 'LASTNAME', defaultValue: '', description: 'Enter last name')
 
-        choice(
-            name: 'ACCOUNT_MANAGEMENT',
-            choices: ['', 'add_user', 'delete_user', 'lock_user', 'unlock_user'],
-            description: ''
-        )
     }
 
     stages {
@@ -53,21 +53,9 @@ pipeline {
                     }
             steps {
                 script {
-                    sh """
-                    # Check if the user exists
-                        if id "${params.USERNAME}" &>/dev/null; then
-                            # Remove the user
-                            sudo userdel -r "${params.USERNAME}"
-                            sudo cat /etc/passwd
-                            sudo cat /etc/shadow
-                            echo "User '${params.USERNAME}' has been removed."
-                        else
-                            # Exit if the user doesn't exist
-                            echo "User '${params.USERNAME}' does not exist. Exiting."
-                            exit 1
-                        fi
                     
-                    """
+                    delete_user_account()
+                    
                 }
             }
         }
@@ -78,21 +66,7 @@ pipeline {
                   }
             steps {
                 script {
-                    sh """
-                        # Check if the user exists
-                        if id "${params.USERNAME}" &>/dev/null; then
-                           # Lock the user account
-                            sudo passwd -l "${params.USERNAME}"
-                            sudo cat /etc/passwd
-                            sudo cat /etc/shadow
-                            echo "User account '${params.USERNAME}' has been locked."
-                        else
-                            # Exit if the user doesn't exist
-                            echo "User '${params.USERNAME}' does not exist. Exiting."
-                            exit 1
-                        fi
-
-                    """
+                    lock_user_account()
                 }
             }
         }
@@ -103,20 +77,7 @@ pipeline {
                   }
             steps {
                 script {
-                    sh """
-                    # Check if the user exists
-                        if id "${params.USERNAME}" &>/dev/null; then
-                            # Unlock the user account
-                            sudo passwd -u "${params.USERNAME}"
-                            sudo cat /etc/passwd
-                            sudo cat /etc/shadow
-                            echo "User account '${params.USERNAME}' has been unlocked."
-                        else
-                            # Exit if the user doesn't exist
-                            echo "User '${params.USERNAME}' does not exist. Exiting."
-                            exit 1
-                        fi
-                    """
+                    unlock_user_account()
                 }
             }
         }
@@ -219,83 +180,3 @@ def unlock_user_account() {
 }
 
 
-// pipeline {
-//        agent {
-//         label 'master'
-//     }
-//     parameters {
-//         choice(
-//             name: 'FRUIT_SELECTION',
-//             choices: ['', 'Apple', 'Banana', 'Cherry', 'Orange'],
-//             description: 'Select your favorite fruit'
-//         )
-//     }
-
-//     stages {
-//         stage('Build') {
-//             steps {
-//                 script {
-//                     def selectedFruit = params.FRUIT_SELECTION
-//                     echo "You selected: $selectedFruit"
-                    
-//                     // Use the selectedFruit variable in your pipeline as needed
-//                 }
-//             }
-//         }
-//     }
-// }
-
-//// delete user account
-
-#!/bin/bash
-
-USERNAME=$1
-
-# Check if the user exists
-if id "$USERNAME" &>/dev/null; then
-    # Remove the user
-    userdel -r "$USERNAME"
-    echo "User '$USERNAME' has been removed."
-else
-    # Exit if the user doesn't exist
-    echo "User '$USERNAME' does not exist. Exiting."
-    exit 1
-fi
-
-
-
-### lock the user account
-
-#!/bin/bash
-
-USERNAME=$1
-
-# Check if the user exists
-if id "$USERNAME" &>/dev/null; then
-    # Lock the user account
-    passwd -l "$USERNAME"
-    echo "User account '$USERNAME' has been locked."
-else
-    # Exit if the user doesn't exist
-    echo "User '$USERNAME' does not exist. Exiting."
-    exit 1
-fi
-
-
-/// unlock the user account
-
-
-#!/bin/bash
-
-USERNAME=$1
-
-# Check if the user exists
-if id "$USERNAME" &>/dev/null; then
-    # Unlock the user account
-    passwd -u "$USERNAME"
-    echo "User account '$USERNAME' has been unlocked."
-else
-    # Exit if the user doesn't exist
-    echo "User '$USERNAME' does not exist. Exiting."
-    exit 1
-fi
