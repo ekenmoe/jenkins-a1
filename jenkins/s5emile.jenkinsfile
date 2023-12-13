@@ -4,6 +4,11 @@ pipeline {
     // agent {
     //     label 'master'
     // }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+        disableConcurrentBuilds()
+        timeout(time: 1, unit: 'HOURS') 
+        timestamps()
 
     parameters {
         choice(
