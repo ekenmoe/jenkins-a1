@@ -9,7 +9,7 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 1, unit: 'HOURS') 
         timestamps()
-
+    }
     parameters {
         choice(
             name: 'ACCOUNT_MANAGEMENT',
