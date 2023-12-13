@@ -1,0 +1,301 @@
+pipeline {
+
+    agent any
+    // agent {
+    //     label 'production'
+    // }
+
+    parameters {
+        string(name: 'USERNAME', defaultValue: '', description: 'Enter username')
+        string(name: 'PASSWORD', defaultValue: '', description: 'Enter password')
+        string(name: 'EMAIL', defaultValue: '', description: 'Enter email')
+        string(name: 'FIRSTNAME', defaultValue: '', description: 'Enter first name')
+        string(name: 'LASTNAME', defaultValue: '', description: 'Enter last name')
+
+        choice(
+            name: 'ACCOUNT_MANAGEMENT',
+            choices: ['', 'add_user', 'delete_user', 'lock_user', 'unlock_user'],
+            description: ''
+        )
+    }
+
+    stages {
+        stage('Sanity Check') {
+            steps {
+                script{
+                   sanity_check() 
+                }
+            }
+        }
+
+        stage('Collect Information') {
+            steps {
+                script {
+                    collect_information()
+                }
+            }
+        }
+
+        stage('Create user account') {
+             when {
+                   expression { params.ACCOUNT_MANAGEMENT == 'add_user' }
+                  }
+            steps {
+                script {
+                    create_user_account()
+                }
+            }
+        }
+
+         stage('delete user account') {
+             when {
+                   expression { params.ACCOUNT_MANAGEMENT == 'delete_user' }
+                    }
+            steps {
+                script {
+                    sh """
+                    # Check if the user exists
+                        if id "${params.USERNAME}" &>/dev/null; then
+                            # Remove the user
+                            sudo userdel -r "${params.USERNAME}"
+                            sudo cat /etc/passwd
+                            sudo cat /etc/shadow
+                            echo "User '${params.USERNAME}' has been removed."
+                        else
+                            # Exit if the user doesn't exist
+                            echo "User '${params.USERNAME}' does not exist. Exiting."
+                            exit 1
+                        fi
+                    
+                    """
+                }
+            }
+        }
+
+         stage('lock user account') {
+             when {
+                  expression { params.ACCOUNT_MANAGEMENT == 'lock_user' }
+                  }
+            steps {
+                script {
+                    sh """
+                        # Check if the user exists
+                        if id "${params.USERNAME}" &>/dev/null; then
+                           # Lock the user account
+                            sudo passwd -l "${params.USERNAME}"
+                            sudo cat /etc/passwd
+                            sudo cat /etc/shadow
+                            echo "User account '${params.USERNAME}' has been locked."
+                        else
+                            # Exit if the user doesn't exist
+                            echo "User '${params.USERNAME}' does not exist. Exiting."
+                            exit 1
+                        fi
+
+                    """
+                }
+            }
+        }
+
+         stage('unlock user account') {
+             when {
+                    expression { params.ACCOUNT_MANAGEMENT == 'unlock_user' }
+                  }
+            steps {
+                script {
+                    sh """
+                    # Check if the user exists
+                        if id "${params.USERNAME}" &>/dev/null; then
+                            # Unlock the user account
+                            sudo passwd -u "${params.USERNAME}"
+                            sudo cat /etc/passwd
+                            sudo cat /etc/shadow
+                            echo "User account '${params.USERNAME}' has been unlocked."
+                        else
+                            # Exit if the user doesn't exist
+                            echo "User '${params.USERNAME}' does not exist. Exiting."
+                            exit 1
+                        fi
+                    """
+                }
+            }
+        }
+    }
+}
+
+def sanity_check() {
+    if (params.USERNAME.isEmpty()){
+       echo "The parameter USERNAME is not set"
+       sh 'exit 2'
+   } 
+   if (params.PASSWORD.isEmpty()){
+       echo "The parameter PASSWORD is not set"
+       sh 'exit 2'
+   }
+   if (params.EMAIL.isEmpty()){
+       echo "The parameter EMAIL is not set"
+       sh 'exit 2'
+   }
+   if (params.FIRSTNAME.isEmpty()){
+       echo "The parameter FIRSTNAME is not set"
+       sh 'exit 2'
+   }
+   if (params.LASTNAME.isEmpty()){
+       echo "The parameter LASTNAME is not set"
+       sh 'exit 2'
+   }
+}
+
+def collect_information() {
+    sh """
+        echo "Username: ${params.USERNAME}"
+        echo "Password : ${params.PASSWORD}"
+        echo "Email: ${params.EMAIL}"
+        echo "First Name: ${params.FIRSTNAME}"
+        echo "Last Name: ${params.LASTNAME}"
+    """
+}
+
+def create_user_account() {
+    sh """
+        sudo useradd -m ${params.USERNAME}
+        sudo echo "${params.USERNAME}:${params.PASSWORD}" | sudo -S chpasswd
+        sudo usermod -c "${params.FIRSTNAME} ${params.LASTNAME}" ${params.USERNAME}
+        sudo cat /etc/passwd
+        sudo cat /etc/shadow
+        ls /home
+    """
+}
+
+def delete_user_account() {
+    sh """
+        # Check if the user exists
+        if id "${params.USERNAME}" &>/dev/null; then
+            # Remove the user
+            sudo userdel -r "${params.USERNAME}"
+            sudo cat /etc/passwd
+            sudo cat /etc/shadow
+            echo "User '${params.USERNAME}' has been removed."
+        else
+            # Exit if the user doesn't exist
+            echo "User '${params.USERNAME}' does not exist. Exiting."
+            exit 1
+        fi
+    """
+}
+
+def lock_user_account() {
+    sh """
+         # Check if the user exists
+        if id "${params.USERNAME}" &>/dev/null; then
+            # Lock the user account
+            sudo passwd -l "${params.USERNAME}"
+            sudo cat /etc/passwd
+            sudo cat /etc/shadow
+            echo "User account '${params.USERNAME}' has been locked."
+        else
+            # Exit if the user doesn't exist
+            echo "User '${params.USERNAME}' does not exist. Exiting."
+            exit 1
+        fi
+    """
+}
+
+def unlock_user_account() {
+    sh """
+        # Check if the user exists
+        if id "${params.USERNAME}" &>/dev/null; then
+            # Unlock the user account
+            sudo passwd -u "${params.USERNAME}"
+            sudo cat /etc/passwd
+            sudo cat /etc/shadow
+            echo "User account '${params.USERNAME}' has been unlocked."
+        else
+            # Exit if the user doesn't exist
+            echo "User '${params.USERNAME}' does not exist. Exiting."
+            exit 1
+        fi
+    """
+}
+
+
+// pipeline {
+//        agent {
+//         label 'master'
+//     }
+//     parameters {
+//         choice(
+//             name: 'FRUIT_SELECTION',
+//             choices: ['', 'Apple', 'Banana', 'Cherry', 'Orange'],
+//             description: 'Select your favorite fruit'
+//         )
+//     }
+
+//     stages {
+//         stage('Build') {
+//             steps {
+//                 script {
+//                     def selectedFruit = params.FRUIT_SELECTION
+//                     echo "You selected: $selectedFruit"
+                    
+//                     // Use the selectedFruit variable in your pipeline as needed
+//                 }
+//             }
+//         }
+//     }
+// }
+
+//// delete user account
+
+#!/bin/bash
+
+USERNAME=$1
+
+# Check if the user exists
+if id "$USERNAME" &>/dev/null; then
+    # Remove the user
+    userdel -r "$USERNAME"
+    echo "User '$USERNAME' has been removed."
+else
+    # Exit if the user doesn't exist
+    echo "User '$USERNAME' does not exist. Exiting."
+    exit 1
+fi
+
+
+
+### lock the user account
+
+#!/bin/bash
+
+USERNAME=$1
+
+# Check if the user exists
+if id "$USERNAME" &>/dev/null; then
+    # Lock the user account
+    passwd -l "$USERNAME"
+    echo "User account '$USERNAME' has been locked."
+else
+    # Exit if the user doesn't exist
+    echo "User '$USERNAME' does not exist. Exiting."
+    exit 1
+fi
+
+
+/// unlock the user account
+
+
+#!/bin/bash
+
+USERNAME=$1
+
+# Check if the user exists
+if id "$USERNAME" &>/dev/null; then
+    # Unlock the user account
+    passwd -u "$USERNAME"
+    echo "User account '$USERNAME' has been unlocked."
+else
+    # Exit if the user doesn't exist
+    echo "User '$USERNAME' does not exist. Exiting."
+    exit 1
+fi
