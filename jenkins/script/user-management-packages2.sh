@@ -12,6 +12,7 @@ PASSWORD=$3
 EMAIL=$4
 FIRSTNAME=$5
 LASTNAME=$6
+ACCOUNT_MANAGEMENT=$7
 
 OS_NAME=$(cat /etc/*release |grep -w NAME |awk -F'"' '{print$2}')
 
@@ -45,18 +46,18 @@ echo "Last Name: ${LASTNAME}"
 echo "Account management: ${ACCOUNT_MANAGEMENT}
 
 manage_user_account() {
-    if [ "$1" == "add_user" ]; then
+    if [ "$7" == "add_user" ]; then
         if ! grep -q "^$2:" /etc/passwd; then
             sudo useradd -m "$2"
             echo "$2:$3" | sudo chpasswd
-            sudo usermod -c "$4 $5" "$2"
+            sudo usermod -c "$5 $6" "$2"
             sudo cat /etc/passwd | grep "$2"
             sudo cat /etc/shadow | grep "$2"
             ls /home
         else
             echo "User $2 already exists"
         fi
-    elif [ "$1" == "delete_user" ]; then
+    elif [ "$7" == "delete_user" ]; then
         if ! grep -q "^$2:" /etc/passwd; then
             echo "User $2 does not exist"
         else
@@ -65,7 +66,7 @@ manage_user_account() {
             sudo cat /etc/passwd | grep "$2" || true
             sudo cat /etc/shadow | grep "$2" || true
         fi
-    elif [ "$1" == "lock_user" ]; then
+    elif [ "$7" == "lock_user" ]; then
         if ! grep -q "^$2:" /etc/passwd; then
             echo "User $2 does not exist"
         else
@@ -73,7 +74,7 @@ manage_user_account() {
             echo "The user $2 with password $3 has been locked"
             sudo cat /etc/shadow | grep "$2"
         fi
-    elif [ "$1" == "unlock_user" ]; then
+    elif [ "$7" == "unlock_user" ]; then
         if ! grep -q "^$2:" /etc/passwd; then
             echo "User $2 does not exist"
         else
@@ -82,6 +83,6 @@ manage_user_account() {
             sudo cat /etc/shadow | grep "$2"
         fi
     else
-        echo "Invalid ACCOUNT_MANAGEMENT action: $1"
+        echo "Invalid ACCOUNT_MANAGEMENT action: $7"
     fi
 }
